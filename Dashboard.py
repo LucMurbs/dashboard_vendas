@@ -2,16 +2,13 @@ import streamlit as st
 import requests
 import pandas as pd
 import plotly.express as px 
-#Obs: Lembrando que sempre que eu sair tenho que executar o venv novamente!!! com o comando .\venv\Scripts\activate!
-#Obs; A partir do terminal do computador, é possível checar as bibliotecas instaladas no ambiente virtual usando o comando pip freeze. 
-#Obs: Precisa ser um arquivo de texto com o nome específico: requirements.txt  para pode fazer o deploy
 
 
 
 
 
 
-st.set_page_config(layout='wide') #Para ajudar a não sobrepor um gráfico com o outro de outra coluna
+st.set_page_config(layout='wide')
 
 
 
@@ -51,11 +48,11 @@ query_string = {'regiao' : regiao.lower(), 'ano':ano}
 
 
 ##Usando o requests para pegar a url!
-response = requests.get(url, params=query_string) #Usei o params para passar o filtro que eu fiz usando a própria url
+response = requests.get(url, params=query_string) 
 dados = pd.DataFrame.from_dict(response.json())
 dados['Data da Compra'] = pd.to_datetime(dados['Data da Compra'], format = '%d/%m/%Y')
 
-###Filtro Por vendedores, coloquei aqui porque precisei de ler os dados primeiro, esse filtro foi feito sem ser pela url e sim pelos dados já lido!
+###Filtro Por vendedores
 filtro_vendedores = st.sidebar.multiselect('Vendedores', dados['Vendedor'].unique())
 if filtro_vendedores:
     dados = dados[dados['Vendedor'].isin(filtro_vendedores)]
@@ -70,11 +67,6 @@ if filtro_vendedores:
 receita_estados = dados.groupby('Local da compra')[['Preço']].sum()
 receita_estados = dados.drop_duplicates(subset= 'Local da compra')[['Local da compra', 'lat', 'lon']].merge(receita_estados, left_on= 'Local da compra', 
                                                                                                             right_index=True).sort_values('Preço', ascending=False) 
-#Aqui eu substitui a primeira variável criada anteriormente, usei uma função para remover todas as linhas que tem informação duplicada, 
-# vamos manter apenas os valores únicos de sigla de estado, o subset é usado para informar que queremos remover as duplicadas com base na informação que passarmos para ele,
-#depois selecionamos as colunas que queremos manter nessa tabela, e depois usamos o merge para agrupar essa tabela que criamos com o drop_duplicates com a que criamos anteriormente,
-#left_on é a coluna base, a qual usamos para começar a fazer o agrupamento, e o right_index para pegar a mesma variável que é 'Local da compra" na tabela que eu criei com o drop
-#duplicates!
 
 receita_mensal = dados.set_index('Data da Compra').groupby(pd.Grouper(freq = 'M'))[['Preço']].sum().reset_index() #O Grouper é usado para agrupar os meses separadamente um do outro`
 receita_mensal['Ano'] = receita_mensal['Data da Compra'].dt.year
@@ -110,10 +102,10 @@ fig_mapa_receita = px.scatter_geo(receita_estados,
                                   lat = 'lat',
                                   lon = 'lon',
                                   scope = 'south america',
-                                  size = 'Preço', #esse daqui define o tamanho do círculo
-                                  template = 'seaborn', #aqui é para manter o padrão do seaborn
-                                  hover_name = 'Local da compra', #essa serve para quando eu passar o mouse em cima ver o nome do estado que é aquela bolha
-                                  hover_data = {'lat' : False, 'lon' : False}, #aqui é para tirar a informação de latitude e longitude, deixar só o estado e o preço!
+                                  size = 'Preço', 
+                                  template = 'seaborn', 
+                                  hover_name = 'Local da compra', 
+                                  hover_data = {'lat' : False, 'lon' : False}, 
                                   title = 'Receita Por Estado')
 
 fig_receita_mensal = px.line(receita_mensal, 
@@ -122,19 +114,19 @@ fig_receita_mensal = px.line(receita_mensal,
                              markers = True,
                              range_y = (0, receita_mensal.max()),
                              color = 'Ano',
-                             line_dash = 'Ano', #altera o formato da linha conforme o ano
+                             line_dash = 'Ano', 
                              title = 'Receita Mensal')
 fig_receita_mensal.update_layout(yaxis_title = 'Receita')
 
 fig_receita_estados = px.bar(receita_estados.head(),
                              x = 'Local da compra',
                              y = 'Preço',
-                             text_auto = True, #Esse parâmetro indica que vamos colocar o valor da receita em cima de cada uma das colunas de forma automática!
+                             text_auto = True, 
                              title = 'Top Estados (receita)')
 fig_receita_estados.update_layout(yaxis_title = 'Receita')
 
 fig_receita_categorias = px.bar(receita_categorias,
-                                text_auto=True, #Aqui não precisamos passar o x e o y porque como só tem duas informações o plotly vai identificar automaticamente
+                                text_auto=True, 
                                 title='Receita Por Categoria')
 fig_receita_categorias.update_layout(yaxis_title = 'Receita')
 
@@ -207,7 +199,7 @@ with aba3:
     coluna1 , coluna2 = st.columns(2)
     with coluna1:
         st.metric('Receita Total', formata_numero(dados['Preço'].sum(), 'R$'))
-        fig_receita_vendedores = px.bar(vendedores[['sum']].sort_values('sum', ascending=False).head(qtd_vendedores), #O head foi usado para agrupar os 5 vendedores da qtd que passamos ali em cima 
+        fig_receita_vendedores = px.bar(vendedores[['sum']].sort_values('sum', ascending=False).head(qtd_vendedores), 
                                         x='sum',
                                         y=vendedores[['sum']].sort_values(['sum'], ascending=False).head(qtd_vendedores).index,
                                         text_auto=True,
@@ -216,7 +208,7 @@ with aba3:
     st.plotly_chart(fig_receita_vendedores)
     with coluna2:
         st.metric('Quantidade De Vendas Total', formata_numero(dados.shape[0]))
-        fig_vendas_vendedores = px.bar(vendedores[['count']].sort_values('count', ascending=False).head(qtd_vendedores), #O head foi usado para agrupar os 5 vendedores da qtd que passamos ali em cima 
+        fig_vendas_vendedores = px.bar(vendedores[['count']].sort_values('count', ascending=False).head(qtd_vendedores), 
                                         x='count',
                                         y=vendedores[['count']].sort_values(['count'], ascending=False).head(qtd_vendedores).index,
                                         text_auto=True,
